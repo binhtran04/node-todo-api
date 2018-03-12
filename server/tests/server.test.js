@@ -3,6 +3,7 @@ const request = require('supertest');
 
 const { app } = require('./../server');
 const { Todo } = require('./../models/todo');
+const { User } = require('./../models/user');
 const {ObjectID} = require('mongodb');
 
 const todos = [{
@@ -19,6 +20,8 @@ beforeEach((done) => {
 	Todo.remove({}).then(() => {
 		return Todo.insertMany(todos);
 	}).then(() => done());
+
+
 });
 
 describe('POST /todos', () => {
@@ -178,4 +181,34 @@ describe('PATCH /todos/:id', (done) => {
 			})	
 			.end(done);
 	});
+});
+
+describe('POST /users', (done) => {
+	it('should save the user to the database', (done) => {
+		var user = {
+			email: 'test@test.com',
+			password: 'testpass'
+		};
+
+		request(app)
+			.post('/users')
+			.send(user)
+			.expect(200)
+			.expect((res) => {
+				expect(res.body.email).toBe(user.email);
+				expect(res.body.password).toBe(user.password);
+			}).end((err, res) => {
+				if (err) {
+					return done(err);
+				}
+
+				User.find(user).then((users) => {
+					expect(users.length).toBe(1);
+					expect(users[0].email).toBe(user.email);
+					expect(users[0].password).toBe(user.password);
+					done();
+				}).catch((e) => done(e));
+			});
+	});
+
 });
